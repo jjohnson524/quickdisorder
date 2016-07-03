@@ -1,0 +1,5 @@
+build
+dist
+
+syntax: glob
+src/cython/*.c
