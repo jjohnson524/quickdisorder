@@ -23,7 +23,7 @@ def try_to_nonorder(task):
     if radius is None:
         radius = 4
     else:
-        radius += 0
+        radius += 1
     ans = quickdisorder.has_non_orderable_group(manifold, ball_radius = radius, 
                                            fundamental_group_args = [True, True, False])
     if ans:
