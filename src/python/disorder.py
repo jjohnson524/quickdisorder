@@ -13,8 +13,8 @@ class MonoidInGroup(object):
         """
         Returns whether 1 is in self after saturation
         """
-        self.elements = ans = self.elements | set(new_elements)
-        active = ans.copy()
+        active = set(new_elements)
+        ans = self.elements | set(active)
         while len(active) > 0:
             new_elts = set()
             for x in ans:
