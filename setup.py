@@ -16,7 +16,7 @@ ext_modules = [Extension(name = 'quickdisorder.sl2matrix',
 
 setup(
     name = 'quickdisorder',
-    version = '0.1',
+    version = '0.2',
     install_requires = ['snappy'],
     packages = ['quickdisorder'],
     package_dir = {'quickdisorder':'src/python'},
