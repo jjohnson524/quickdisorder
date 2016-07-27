@@ -1,8 +1,16 @@
+import json
 from . import double_group
 
 class MonoidInGroup(object):
-    def __init__(self, elements, ball, saturate=True):
-        self.ball = ball
+    """
+    If track is True, remember how each element in self can be
+    expressed in terms of the given monoid generators.
+    """
+    def __init__(self, elements, ball, saturate=True, track=False):
+        self.ball, self.track = ball, track
+        if track:
+            self.expressed_in_gens = dict()
+            self._word_rep_one = None
         if saturate:
             self.elements = set()
             self._has_one = self.saturate(elements)
@@ -15,19 +23,31 @@ class MonoidInGroup(object):
         """
         active = set(new_elements)
         ans = self.elements | set(active)
+
+        track = self.track
+        if track:
+            in_gens = self.expressed_in_gens
+            for x in active:
+                in_gens[x] = [x.word]
+
         while len(active) > 0:
             new_elts = set()
             for x in ans:
                 for y in active:
-                    for z in [x*y, y*x]:
+                    for a, b in [(x, y), (y, x)]:
+                        z = a*b
                         if z in self.ball.elements and z not in ans:
                             # The next application of the "identity" map is
                             # to try to prevent accumulation of numerical error.
                             z = self.ball.element_dict[z]
                             new_elts.add(z)
+                            if track:
+                                in_gens[z] = in_gens[a] + in_gens[b]                            
                             if z.is_one():
                                 self.elements = ans | new_elts
                                 self._has_one = True
+                                if track:
+                                    self._word_rep_one = in_gens[z]
                                 return True
 
             ans = ans | new_elts
@@ -40,8 +60,11 @@ class MonoidInGroup(object):
         return self._has_one
 
     def copy(self):
-        M = MonoidInGroup(self.elements, self.ball, False)
+        M = MonoidInGroup(self.elements, self.ball, False, self.track)
         M._has_one = self._has_one
+        if self.track:
+            M._word_rep_one = self._word_rep_one
+            M.expressed_in_gens = self.expressed_in_gens.copy()
         return M
         
     def words(self):
@@ -55,15 +78,102 @@ class MonoidInGroup(object):
     def __len__(self):
         return len(self.elements)
 
-def printer(depth, string):
-    print('  '*depth + '%d: ' % depth + string)
+class Printer(object):
+    def __init__(self, silent=False):
+        self.silent = silent
+        self.depth = 0
+
+    def size_of_ball(self, B):
+        self.write('Ball has %d elements' % len(B.elements))
+        
+    def add_monoid_gen(self, element):
+        self.write('Adding %s' % element.word)
+        self.depth += 1
+
+    def size_of_monoid(self, P):
+        self.write('Size of P is %d' % len(P.elements))
+
+    def contradiction(self, word=None):
+        if word:
+            word = '*'.join(word)
+            self.write('Contradiction: ' + word + ' = 1 in P')
+        else:
+            self.write('Contradiction: 1 in P')
+        self.depth += -1 
+            
+    def write(self, string):
+        if not self.silent:
+            print('  '*self.depth + '%d: ' % self.depth + string)
+
+    def proof_string(self, manifold, args):
+        G = manifold.fundamental_group(*args)
+        ans = {'name':repr(manifold),
+               'group_args':[1 if x else 0 for x in args],
+               'gens':'.'.join(G.generators()),
+               'rels':G.relators(),
+               'proof':self.value,
+               }
+        
+        return json.dumps(ans).replace(' ', '')
+
     
-def ball_has_order(B, P, recur_depth):
-    printer(recur_depth, 'Size of P is %d' % len(P.elements))
+    
+class ProofPrinter(Printer):
+    """
+    Stores a proof that a group G is nonorderable.  The proof itself
+    is a rooted binary tree, oriented away from the root, with the
+    following structure:
+
+    1. Each edge is labelled by a word that represents a *nontrivial*
+    element of G; the labels on the two edges leaving a vertex are
+    inverses *words* of one another.
+
+    2. Each leaf is labelled by a word in the edge labels that appear
+    along the unique path from the leaf back to the root.
+
+    3. The word associated to each leaf is trivial in G.
+
+    We output the proof as a sequence of pairs
+
+         [(edge path from root to leaf), (word at leaf)]
+
+    Both items in the pair are strings consisting of words in [a-zA-Z]
+    separated by periods.
+
+    To check a such a proof, one must verify:
+
+    a) All edge labels give non-trivial elements of G.
+
+    b) The collection of edge paths forms a binary tree satisfying (2)
+    
+    c) Each leaf word gives 1 in G and is in  fact a product of the
+    preceding edge labels.
+    """
+    def __init__(self, silent):
+        self.depth = 0
+        self.silent = silent
+        self.edges_back_to_root = []
+        self.value = []
+
+    def add_monoid_gen(self, element):
+        word = element.word
+        self.edges_back_to_root.append(word)
+        Printer.add_monoid_gen(self, element)
+
+    def contradiction(self, word=None):
+        if word is not None:
+            self.value.append(['.'.join(self.edges_back_to_root), '.'.join(word)])
+        self.edges_back_to_root = self.edges_back_to_root[:-1]
+        Printer.contradiction(self, word)
+    
+def ball_has_order(B, P, printer, recur_depth):
+    printer.size_of_monoid(P)
     if P.has_one():
-        printer(recur_depth, "Contradiction: 1 in P")
-        #words = [e.word for e in P.elements if e.is_one()]
-        #printer(recur_depth, repr(words))
+        if P.track:
+            word = P._word_rep_one
+        else:
+            word = None
+        printer.contradiction(word)
         return False, P
 
     # If we get close to building a full P, we almost always get
@@ -75,64 +185,83 @@ def ball_has_order(B, P, recur_depth):
 
     for x, y in B.non_id_element_pairs:
         if (x not in P) and (y not in P):
-            printer(recur_depth, 'Adding %s' % x.word)
+            printer.add_monoid_gen(x)
             newP = P.copy()
             newP.saturate([x])
-            ans = ball_has_order(B, newP, recur_depth+1)
+            ans = ball_has_order(B, newP, printer, recur_depth+1)
             if ans[0]:
                 return ans
             else:
-                printer(recur_depth, 'Adding %s' % y.word)
+                printer.add_monoid_gen(y)
                 newP = P.copy()
                 newP.saturate([y])
-                return ball_has_order(B, newP, recur_depth+1)
+                return ball_has_order(B, newP, printer, recur_depth+1)
 
     return True, P
 
-def has_non_orderable_group(manifold, ball_radius=3,min_bits_accuracy=15,
+def has_non_orderable_group(manifold, ball_radius=3,
+                            silent=False, track=False, return_proof=False,
+                            min_bits_accuracy=15,
                             fundamental_group_args = [True, True, False]):
     """
     >>> import snappy
     >>> M = snappy.Manifold('m003(-3,1)')
-    >>> has_non_orderable_group(M)
+    >>> has_non_orderable_group(M, track=True)
     0: Ball has 151 elements
-    0: Size of P is 3
-    0: Adding b
-      1: Size of P is 104
-      1: Contradiction: 1 in P
-    0: Adding B
-      1: Size of P is 14
-      1: Adding c
-        2: Size of P is 97
-        2: Contradiction: 1 in P
-      1: Adding C
-        2: Size of P is 54
-        2: Contradiction: 1 in P
+    0: Adding a
+      1: Size of P is 3
+      1: Adding b
+        2: Size of P is 104
+        2: Contradiction: b*a*b*a*b*b*a*a*a*b = 1 in P
+      1: Adding B
+        2: Size of P is 14
+        2: Adding c
+          3: Size of P is 97
+          3: Contradiction: a*B*c*a*a*c*c = 1 in P
+        2: Adding C
+          3: Size of P is 54
+          3: Contradiction: C*a*C*a*a*B = 1 in P
     True
 
+    >>> ans, proof = has_non_orderable_group(M, silent=True, return_proof=True)
+    >>> json.loads(proof)['proof']
+    [[u'a.b', u'b.a.b.a.b.b.a.a.a.b'], [u'a.B.c', u'a.B.c.a.a.c.c'], [u'a.B.C', u'C.a.C.a.a.B']]
     >>> N = snappy.Manifold('m004(1, 2)')
     >>> has_non_orderable_group(N)
     0: Ball has 159 elements
-    0: Size of P is 3
-    0: Adding b
-      1: Size of P is 14
-      1: Adding c
-        2: Size of P is 36
-        2: Adding aB
-          3: Size of P is 49
-          3: Adding aC
-            4: Size of P is 67
-            4: Adding bC
-              5: Size of P is 70
-              5: Adding aBB
-                6: Size of P is 72
+    0: Adding a
+      1: Size of P is 3
+      1: Adding b
+        2: Size of P is 14
+        2: Adding c
+          3: Size of P is 36
+          3: Adding aB
+            4: Size of P is 49
+            4: Adding aC
+              5: Size of P is 67
+              5: Adding bC
+                6: Size of P is 70
+                6: Adding aBB
+                  7: Size of P is 72
     False
     """
+    if return_proof:
+        track = True
+        printer = ProofPrinter(silent)
+    else:
+        printer = Printer(silent)
     G = double_group.Double3ManifoldGroup(
               manifold, min_bits_accuracy, fundamental_group_args)
     a = G('a')
     B = G.ball(ball_radius)
-    printer(0, 'Ball has %d elements' % len(B.elements))
-    P = MonoidInGroup([a], B)
-    return not ball_has_order(B, P, 0)[0]
+    printer.size_of_ball(B)
+    printer.add_monoid_gen(a)
+    P = MonoidInGroup([a], B, track=track)
+    ans = not ball_has_order(B, P, printer, 0)[0]
+    if return_proof:
+        if ans:
+            return ans, printer.proof_string(manifold, fundamental_group_args)
+        else:
+            return ans, None
+    return ans
 
