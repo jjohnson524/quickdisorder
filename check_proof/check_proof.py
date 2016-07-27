@@ -2,9 +2,11 @@ import json
 import snappy
 import word_problem
 
-sample = """{"rels":["abbcb","ccAcAB","aabcc"],"group_args":[1,1,0],
+sample1 = """{"rels":["abbcb","ccAcAB","aabcc"],"group_args":[1,1,0],
 "proof":[["a.b","b.a.b.a.b.b.a.a.a.b"],["a.B.c","a.B.c.a.a.c.c"],
 ["a.B.C","C.a.C.a.a.B"]],"name":"m003(-3,1)","gens":"a.b.c"}"""
+
+sample2 = """ {"rels":["aacbc","bcBcbA","abcccbabccbabccb"],"group_args":[1,1,0],"proof":[["a.b.c","b.c.a.a.c"],["a.b.C.aB","a.aB.a.a.b.C.a.aB.aB.C.b.aB.a.a.b"],["a.b.C.bA.ca","ca.ca.a.b.a.a"],["a.b.C.bA.AC.Ab.cb.ac","cb.cb.a.ac.ac.a.a.a.a"],["a.b.C.bA.AC.Ab.cb.CA.bc","bc.cb.a.bc.cb.a.bc.cb.cb.a.bc.cb.a.bc.cb.a.a.a.bc.cb.a.bc.cb.a.a.a.bc.cb.a.bc.cb.a.bc"],["a.b.C.bA.AC.Ab.cb.CA.CB","CB.a.a.bA.AC.CB.a.a.bA.AC.CB.a.a.bA.AC.CB.a"],["a.b.C.bA.AC.Ab.cb.CA.BC","bA.AC.a.a.BC.a.BC.bA.AC.a.a.BC.bA.AC.a.a.BC"],["a.b.C.bA.AC.Ab.cb.CA.Ba","AC.Ba.Ba.AC.b.a"],["a.b.C.bA.AC.Ab.cb.CA.B.c.aC","a.a.c.a.c.a.c.a.aC.a.a.c.a.c.a.c.a.aC.a.a.c.a.c.a.c.a.c.a.aC.a.a.c.a.c.a.c.a.aC.a.a.c.a.c.a.c.a.aC.a.aC"],["a.b.C.bA.AC.Ab.cb.CA.B.c.cA","a.a.cA.c.a.a.a.a.cA.c.a.a.a.a.a.a.cA.c.a.a.a.a.cA.c.a.a.a.a.cA.cA.c.a.a.a.a.cA.c.a.a.a.a.cA.c.a.a.a.a"],["a.b.C.bA.AC.Ab.cb.CA.B.c.C.ba","a.B.a.a.ba.a.B.a.B.C.C.ba"],["a.b.C.bA.AC.Ab.cb.CA.B.c.C.AB","AB.C.C.C.B.AB.C.C.C.C.C.C.C.B.AB.B.a.B.C.a.B.C.a.B.C"]],"name":"m007(-4,3)","gens":"a.b.c"}"""
 
 def paths_to_root(claims):
     return [c[0] for c in claims]
