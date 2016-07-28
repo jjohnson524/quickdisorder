@@ -14,13 +14,17 @@ import quickdisorder
 
 
 def save_proof(task):
-    manifold = snappy.Manifold(task['name'])
+    name = task['name']
+    manifold = snappy.Manifold(name)
     radius = task['cayley_radius']
     if manifold.solution_type() == 'all tetrahedra positively oriented':
         success, proof = quickdisorder.has_non_orderable_group(manifold,
+                                                               silent=True,
                                                                ball_radius=radius, return_proof = True)
         assert success
-        task['proof_nonord'] = proof
+        file = open('proofs/' + name, 'w')
+        file.write(proof + '\n')
+        file.close()
     task['done'] = True
 
 task = {'name':'m003(-3, 1)', 'cayley_radius':4}
