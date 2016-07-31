@@ -81,29 +81,26 @@ class MonoidInGroup(object):
 class Printer(object):
     def __init__(self, silent=False):
         self.silent = silent
-        self.depth = 0
 
-    def size_of_ball(self, B):
-        self.write('Ball has %d elements' % len(B.elements))
+    def size_of_ball(self, B, depth):
+        self.write('Ball has %d elements' % len(B.elements), depth)
         
-    def add_monoid_gen(self, element):
-        self.write('Adding %s' % element.word)
-        self.depth += 1
+    def add_monoid_gen(self, element, depth):
+        self.write('Adding %s' % element.word, depth)
 
-    def size_of_monoid(self, P):
-        self.write('Size of P is %d' % len(P.elements))
+    def size_of_monoid(self, P, depth):
+        self.write('Size of P is %d' % len(P.elements), depth)
 
-    def contradiction(self, word=None):
+    def contradiction(self, word, depth):
         if word:
             word = '*'.join(word)
-            self.write('Contradiction: ' + word + ' = 1 in P')
+            self.write('Contradiction: ' + word + ' = 1 in P', depth)
         else:
-            self.write('Contradiction: 1 in P')
-        self.depth += -1 
+            self.write('Contradiction: 1 in P', depth)
             
-    def write(self, string):
+    def write(self, string, depth):
         if not self.silent:
-            print('  '*self.depth + '%d: ' % self.depth + string)
+            print('  '*depth + '%d: ' % depth + string)
 
     def proof_string(self, manifold, args):
         G = manifold.fundamental_group(*args)
@@ -146,34 +143,33 @@ class ProofPrinter(Printer):
 
     b) The collection of edge paths forms a binary tree satisfying (2)
     
-    c) Each leaf word gives 1 in G and is in  fact a product of the
+    c) Each leaf word gives 1 in G and is in fact a product of the
     preceding edge labels.
     """
     def __init__(self, silent):
-        self.depth = 0
         self.silent = silent
         self.edges_back_to_root = []
         self.value = []
 
-    def add_monoid_gen(self, element):
+    def add_monoid_gen(self, element, depth):
         word = element.word
-        self.edges_back_to_root.append(word)
-        Printer.add_monoid_gen(self, element)
+        self.edges_back_to_root = self.edges_back_to_root[:depth] + [word]
+        Printer.add_monoid_gen(self, element, depth)
 
-    def contradiction(self, word=None):
+    def contradiction(self, word, depth):
         if word is not None:
             self.value.append(['.'.join(self.edges_back_to_root), '.'.join(word)])
         self.edges_back_to_root = self.edges_back_to_root[:-1]
-        Printer.contradiction(self, word)
+        Printer.contradiction(self, word, depth)
     
 def ball_has_order(B, P, printer, recur_depth):
-    printer.size_of_monoid(P)
+    printer.size_of_monoid(P, recur_depth)
     if P.has_one():
         if P.track:
             word = P._word_rep_one
         else:
             word = None
-        printer.contradiction(word)
+        printer.contradiction(word, recur_depth)
         return False, P
 
     # If we get close to building a full P, we almost always get
@@ -185,14 +181,14 @@ def ball_has_order(B, P, printer, recur_depth):
 
     for x, y in B.non_id_element_pairs:
         if (x not in P) and (y not in P):
-            printer.add_monoid_gen(x)
+            printer.add_monoid_gen(x, recur_depth)
             newP = P.copy()
             newP.saturate([x])
             ans = ball_has_order(B, newP, printer, recur_depth+1)
             if ans[0]:
                 return ans
             else:
-                printer.add_monoid_gen(y)
+                printer.add_monoid_gen(y, recur_depth)
                 newP = P.copy()
                 newP.saturate([y])
                 return ball_has_order(B, newP, printer, recur_depth+1)
@@ -254,10 +250,10 @@ def has_non_orderable_group(manifold, ball_radius=3,
               manifold, min_bits_accuracy, fundamental_group_args)
     a = G('a')
     B = G.ball(ball_radius)
-    printer.size_of_ball(B)
-    printer.add_monoid_gen(a)
+    printer.size_of_ball(B, 0)
+    printer.add_monoid_gen(a, 0)
     P = MonoidInGroup([a], B, track=track)
-    ans = not ball_has_order(B, P, printer, 0)[0]
+    ans = not ball_has_order(B, P, printer, 1)[0]
     if return_proof:
         if ans:
             return ans, printer.proof_string(manifold, fundamental_group_args)
