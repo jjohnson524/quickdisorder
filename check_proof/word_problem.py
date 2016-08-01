@@ -8,6 +8,9 @@ from snappy.snap.interval_reps import contains_one, could_be_equal, diameter
 from snappy.snap.polished_reps import SL2C_inverse
 from sage.all import gcd, ZZ
 
+class WordProblemError(Exception):
+    pass
+
 def pairs(xs):
     for i, x in enumerate(xs):
         for y in xs[i+1:]:
@@ -139,7 +142,7 @@ class WordProblemSolver(object):
         A, B = self.noncommmuting_mats
         if jorgensens_inequality_fails(X, A) and jorgensens_inequality_fails(X, B):
             return False
-        raise ValueError('Failed to solve the word problem at this precision.')
+        raise WordProblemError('Failed to solve the word problem at this precision.')
         
     def is_trivial(self, word):
         return not self.is_nontrivial(word)

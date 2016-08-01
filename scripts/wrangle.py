@@ -79,8 +79,3 @@ def fix_all_proofs():
         newfile = open('/pkgs/tmp/proofs_new/' + file, 'w')
         newfile.write(final + '\n')
         newfile.close()
-        
-        
-        
-        
-    
