@@ -1,3 +1,7 @@
+
+def inverse_word(word):
+    return word.swapcase()[::-1]
+
 def next_gen_dict(gens):
     all_gens = gens + [g.swapcase() for g in gens]
     next_gen = { g:[h for h in all_gens if h.swapcase() != g] for g in all_gens }
@@ -29,6 +33,11 @@ class CayleyBall(object):
         for g in ordered_elements:
             h = g.inverse()
             if seen_one.has_key(h):
+                h = seen_one[h]
+                # Want the words associated to g and h be inverses in
+                # the free group.
+                if h.word != inverse_word(g.word):
+                    g._set_word(inverse_word(h.word))
                 non_id_element_pairs.append( (seen_one[h], g) )
             else:
                 seen_one[g] = g

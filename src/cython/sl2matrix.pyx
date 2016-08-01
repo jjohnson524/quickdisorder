@@ -101,6 +101,9 @@ cdef class DoubleGroupElement(object):
         inverse_SL2C(&self.matrix, &ans.matrix)
         ans.set_hash()
         return ans
+
+    def _set_word(self, word):
+        self.word = word
     
     def __repr__(self):
         A = GL2CMatrix_to_array(&self.matrix)
