@@ -102,7 +102,7 @@ class WordProblemSolver(object):
     >>> wps.is_trivial(3*R)
     Traceback (most recent call last):
         ...
-    ValueError: Failed to solve the word problem at this precision.
+    WordProblemError: Failed to solve the word problem at this precision.
     >>> wps.rho(3*R)[0,0].diameter()  # doctest: +ELLIPSIS
     1.899905...
     >>> wps = WordProblemSolver(M, bits_prec=100)
@@ -112,12 +112,16 @@ class WordProblemSolver(object):
     def __init__(self, manifold, bits_prec=100, fundamental_group_args=[True, True, False]):
         if not is_manifold(manifold):
             raise ValueError('Sorry, we do not support orbifold singularities')
-        
-        success, rho = manifold.verify_hyperbolicity(bits_prec=bits_prec, holonomy=True,
-                                                     fundamental_group_args=fundamental_group_args,
-                                                     lift_to_SL = True)
+
+        try:
+            success, rho = manifold.verify_hyperbolicity(bits_prec=bits_prec, holonomy=True,
+                                                         fundamental_group_args=fundamental_group_args,
+                                                         lift_to_SL = True)
+        except AssertionError:
+            raise WordProblemError("Assertion failed for the holonomy rep, try increasing precision.")
+            
         if not success:
-            raise ValueError("Could not verify the holonomy representation.")
+            raise WordProblemError("Could not verify the holonomy rep, try increasing precision.")
 
         self.rho = rho
         self._find_noncommuting_gens()
@@ -129,7 +133,7 @@ class WordProblemSolver(object):
                 self.noncommmuting_gens = (g, h)
                 self.noncommmuting_mats = rho(g), rho(h)
                 return
-        raise ValueError("Could not verify a pair of noncommuting gens.")
+        raise WordProblemError("Could not verify a pair of noncommuting gens.")
 
     def is_nontrivial(self, word):
         X = self.rho(word)
