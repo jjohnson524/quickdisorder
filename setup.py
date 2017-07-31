@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
 import os, glob
@@ -16,7 +16,7 @@ ext_modules = [Extension(name = 'quickdisorder.sl2matrix',
 
 setup(
     name = 'quickdisorder',
-    version = '0.2',
+    version = '0.3',
     install_requires = ['snappy'],
     packages = ['quickdisorder'],
     package_dir = {'quickdisorder':'src/python'},

@@ -32,7 +32,7 @@ class CayleyBall(object):
         non_id_element_pairs = []
         for g in ordered_elements:
             h = g.inverse()
-            if seen_one.has_key(h):
+            if h in seen_one:
                 h = seen_one[h]
                 # Want the words associated to g and h be inverses in
                 # the free group.

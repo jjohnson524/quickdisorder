@@ -1,3 +1,25 @@
+"""
+Each nonordering proof tree is stored as a JSON string.  Here is
+one which matches the figure in the paper illustrating the nonordering
+tree for the fundamental group of the Weeks manifold. 
+"""
+
+sample_weeks = """\
+{
+    "name": "m003(-3,1)",
+    "gens": "a.b", 
+    "rels": ["ababaBaaB", "ababAbbAb"],
+    "proof": [
+        ["a.b.aB", "a.b.a.b.aB.a.aB"],
+        ["a.b.bA", "b.a.b.a.bA.b.bA"],
+        ["a.B", "B.a.B.B.a.a.B.a.a.B"]
+    ],
+    "group_args":[1,1,1]
+}
+"""
+
+
+
 import random, json, os
 import snappy
 import word_problem
@@ -13,8 +35,8 @@ def invert_word(word):
 
 def paths_to_root(claims):
     return [c[0] for c in claims]
-        
-def tree_ok(claims):
+
+def build_graph(claims):
     paths = paths_to_root(claims)
     T = nx.DiGraph()
     T.add_node('1')
@@ -26,6 +48,11 @@ def tree_ok(claims):
             T.add_edge(vert, new_vert, label=g)
             vert = new_vert
         leaves.append(vert)
+    return T, leaves
+    
+        
+def tree_ok(claims):
+    T, leaves = build_graph(claims)
 
     # A branching is a directed forest where every vertex has in-degree
     # a most 1.            
@@ -101,6 +128,37 @@ def check_proof_harder(proof, max_bits=1000):
         except word_problem.WordProblemError:
             bits = 2*bits
     return False, bits
+
+def proof_sizes():
+    dir = '/pkgs/tmp/proofs/'
+    num_edges = []
+    num_leaves = []
+    max_edges = 0
+    max_leaves = 0
+    max_non_trivial_word = 0    
+    
+    for f in os.listdir(dir):
+        proof = json.loads(open(dir + f).read())
+        claims = proof['proof']
+        claims = [(a.split('.'), b.split('.')) for a, b in claims]
+        T, leaves = build_graph(claims)
+        e = T.number_of_edges()
+        l = len(leaves)
+        num_edges.append(e)
+        num_leaves.append(l)
+        
+        if e > max_edges:
+            max_edges = e
+            print('edges', e, f)
+
+        if l > max_leaves:
+            max_leaves = l
+            print('leaves', l, f)
+
+        trivial_words_lengths = [len(c[1]) for c in claims]
+        max_trival_word = max(max_trival_word, max(trivial_words_lengths))
+        
+    return num_edges, num_leaves, max_trival_word
 
 def random_proof():
     dir = '/pkgs/tmp/proofs/'

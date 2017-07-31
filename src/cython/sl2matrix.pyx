@@ -65,18 +65,29 @@ cdef class DoubleGroupElement(object):
         ans.set_hash()
         return ans
 
-    def __cmp__(DoubleGroupElement self, DoubleGroupElement other):
+
+    def __richcmp__(DoubleGroupElement self, DoubleGroupElement other, int op):
         cdef int i
         cdef long s, o
         for i in range(8):
             s = self._hashed_matrix[i]
             o = other._hashed_matrix[i]
-            if s < o:
-                return -1
-            if s > o:
-                return 1
-        return 0
-        
+            if op == 0:
+                c = (s < o)
+            elif op == 1:
+                c = (s <= o)
+            elif op == 2:
+                c = (s == o)
+            elif op == 3:
+                c = (s != o)
+            elif op == 4:
+                c = (s > o)
+            else:
+                c = (s >= o)
+            if not c:
+                return False
+        return True
+
     def trace(self):
         cdef double real, imag
         trace_GL2C(&self.matrix, &real, &imag)
@@ -109,7 +120,7 @@ cdef class DoubleGroupElement(object):
         A = GL2CMatrix_to_array(&self.matrix)
         entries = A[0] + A[1]
         args = tuple([self.word] + entries)
-        return "<NGE: %s; %s %s %s %s>" % args
+        return "<NGE: %s; %r %r %r %r>" % args
 
 cdef class ProjectiveDoubleGroupElement(DoubleGroupElement):
     def __cmp__(DoubleGroupElement self, DoubleGroupElement other):

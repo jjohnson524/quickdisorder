@@ -202,7 +202,7 @@ def has_non_orderable_group(manifold, ball_radius=3,
     """
     >>> import snappy
     >>> M = snappy.Manifold('m003(-3,1)')
-    >>> has_non_orderable_group(M, track=True)
+    >>> has_non_orderable_group(M, track=True)  # doctest: +SKIP
     0: Ball has 151 elements
     0: Adding a
       1: Size of P is 3
@@ -218,9 +218,10 @@ def has_non_orderable_group(manifold, ball_radius=3,
           3: Size of P is 54
           3: Contradiction: C*a*C*a*a*B = 1 in P
     True
-
     >>> ans, proof = has_non_orderable_group(M, silent=True, return_proof=True)
-    >>> json.loads(proof)['proof']
+    >>> ans
+    True
+    >>> json.loads(proof)['proof']   # doctest: +SKIP
     [[u'a.b', u'b.a.b.a.b.b.a.a.a.b'], [u'a.B.c', u'a.B.c.a.a.c.c'], [u'a.B.C', u'C.a.C.a.a.B']]
     >>> N = snappy.Manifold('m004(1, 2)')
     >>> has_non_orderable_group(N)
@@ -240,6 +241,12 @@ def has_non_orderable_group(manifold, ball_radius=3,
                 6: Adding aBB
                   7: Size of P is 72
     False
+
+
+    >>> names = ['m003(-1, 3)', 'm003(-1, 5)', 'm003(-3, 1)', 'm003(-4, 3)', 'm003(-5, 2)', 'm003(-5, 4)', 'm004(-3, 2)', 'm004(-6, 1)']
+    >>> manifolds = [snappy.Manifold(name) for name in names]
+    >>> [has_non_orderable_group(M, silent=True) for M in manifolds]
+    [False, False, True, True, True, True, False, False]
     """
     if return_proof:
         track = True
