@@ -1,6 +1,16 @@
 """
 Using a HIKMOT-style certified solution to the gluing equations to
 solve the word problem in a hyperbolic 3-manifold group.
+
+Requires SnapPy installed inside SageMath.  To test do the following
+at the command line::
+
+    sage -python word_problem.py
+
+and you should see::
+
+    word_problem:TestResults(failed=0, attempted=25)
+
 """
 
 from snappy import Manifold
@@ -153,6 +163,7 @@ class WordProblemSolver(object):
 
 if __name__ == '__main__':
     import doctest
-    doctest.testmod()
-    M = Manifold('s612(3,4)')
-    wps = WordProblemSolver(M, bits_prec=60)
+    results = doctest.testmod()
+    print('word_problem:%s' % (results,))
+    #M = Manifold('s612(3,4)')
+    #wps = WordProblemSolver(M, bits_prec=60)
