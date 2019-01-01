@@ -95,7 +95,7 @@ class WordProblemSolver(object):
     rigorously verify the existence of the hyperbolic structure. 
 
     >>> M = Manifold('s612(3,4)')
-    >>> wps = WordProblemSolver(M, bits_prec=60)
+    >>> wps = WordProblemSolver(M, bits_prec=64)
     >>> wps.is_nontrivial('aab')
     True
     >>> wps.is_trivial('aab')
@@ -114,7 +114,7 @@ class WordProblemSolver(object):
         ...
     WordProblemError: Failed to solve the word problem at this precision.
     >>> wps.rho(3*R)[0,0].diameter()  # doctest: +ELLIPSIS
-    1.899905...
+    0.15065...
     >>> wps = WordProblemSolver(M, bits_prec=100)
     >>> wps.is_trivial(3*R)
     True
