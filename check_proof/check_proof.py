@@ -166,7 +166,7 @@ def check_proof_harder(proof, max_bits=1000):
 
 
 # Loading the saved proofs easily
-proof_tarball = '../proofs.tar'
+proof_tarball = 'proofs.tar'
 if os.path.exists(proof_tarball):
     proof_tarball = tarfile.open(proof_tarball, 'r')
 else:

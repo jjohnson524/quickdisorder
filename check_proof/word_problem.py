@@ -113,8 +113,8 @@ class WordProblemSolver(object):
     Traceback (most recent call last):
         ...
     WordProblemError: Failed to solve the word problem at this precision.
-    >>> wps.rho(3*R)[0,0].diameter()  # doctest: +ELLIPSIS
-    0.15065...
+    >>> wps.rho(3*R)[0,0].diameter() < 0.2
+    True
     >>> wps = WordProblemSolver(M, bits_prec=100)
     >>> wps.is_trivial(3*R)
     True

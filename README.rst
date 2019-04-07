@@ -46,7 +46,11 @@ complete example, run from within the "check_proof" subdirectory::
   True
 
 You can also access any of the 100,000+ proofs that were used in the
-paper iteself.  Here is the most complicated one in terms of the
+paper itself.  To do this, you first need to unpack them::
+
+  bunzip proofs.tar.bz2
+
+Here is the most complicated one in terms of the
 number of leaves of its nonordering proof tree::
 
   sage: hard_proof = check_proof.load_proof_by_name('o9_39416(4, 1)')
