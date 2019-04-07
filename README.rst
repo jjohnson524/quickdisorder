@@ -66,3 +66,14 @@ You can also pick a proof at random::
   sage: check_proof.check_proof(some_proof, bits_prec=400)
   True
   
+
+Geometric triangulations
+========================
+
+In order for the rigorous check to work, the SnapPy solution type
+needs to be "all tetrahedra positively oriented".  There are a few
+simple examples where the default triangulation doesn't satisfy this,
+e.g. "m006(3, 1)" and "m007(3, 1)", which were excluded for
+convenience.  See also the discussion in Remark 5.6 for why this list
+of nonorderable manifolds is not complete even with respect to the
+techniques at hand.
