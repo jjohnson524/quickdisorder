@@ -8,8 +8,8 @@ though you will need the Python package Cython and a working C
 compiler to build it, as it includes a small C extension for rapid
 matrix multiplication.
 
-To install and run the basic tests do the following in this
-directory::
+To install and run the basic tests do the following in this directory;
+if using Sage, replace "python" with "sage -python"::
 
   python -m pip install .
   python -m quickdisorder.test
@@ -48,7 +48,7 @@ complete example, run from within the "check_proof" subdirectory::
 You can also access any of the 100,000+ proofs that were used in the
 paper itself.  To do this, you first need to unpack them::
 
-  bunzip proofs.tar.bz2
+  bunzip --keep proofs.tar.bz2
 
 Here is the most complicated one in terms of the
 number of leaves of its nonordering proof tree::
