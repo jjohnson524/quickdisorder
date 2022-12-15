@@ -6,18 +6,18 @@ class MonoidInGroup(object):
     If track is True, remember how each element in self can be
     expressed in terms of the given monoid generators.
     """
-    def __init__(self, elements, ball, saturate=True, track=False):
-        self.ball, self.track = ball, track
+    def __init__(self, elements, ball, biorder=False, saturate=True, track=False):
+        self.ball, self.biorder, self.track = ball, biorder, track
         if track:
             self.expressed_in_gens = dict()
             self._word_rep_one = None
         if saturate:
             self.elements = set()
-            self._has_one = self.saturate(elements)
+            self._has_one = self.saturate(elements, biorder)
         else:
             self.elements = elements.copy()
         
-    def saturate(self, new_elements):
+    def saturate(self, new_elements, biorder):
         """
         Returns whether 1 is in self after saturation
         """
@@ -32,8 +32,38 @@ class MonoidInGroup(object):
 
         while len(active) > 0:
             new_elts = set()
-            for x in ans:
-                for y in active:
+            for y in active:
+                if biorder:
+                    for g in ans:
+                        z = g*y*g.inverse()
+                        if z in self.ball.elements and z not in ans:
+                            # The next application of the "identity" map is
+                            # to try to prevent accumulation of numerical error.
+                            z = self.ball.element_dict[z]
+                            new_elts.add(z)
+                            if track:
+                                in_gens[z] = [g.word] + in_gens[y] + [g.word.swapcase()]
+                            if z.is_one():
+                                self.elements = ans | new_elts
+                                self._has_one = True
+                                if track:
+                                    self._word_rep_one = in_gens[z]
+                                return True
+                        z = g.inverse()*y*g
+                        if z in self.ball.elements and z not in ans:
+                            # The next application of the "identity" map is
+                            # to try to prevent accumulation of numerical error.
+                            z = self.ball.element_dict[z]
+                            new_elts.add(z)
+                            if track:
+                                in_gens[z] = [g.word.swapcase()] + in_gens[y] + [g.word]
+                            if z.is_one():
+                                self.elements = ans | new_elts
+                                self._has_one = True
+                                if track:
+                                    self._word_rep_one = in_gens[z]
+                                return True
+                for x in ans:
                     for a, b in [(x, y), (y, x)]:
                         z = a*b
                         if z in self.ball.elements and z not in ans:
@@ -60,7 +90,7 @@ class MonoidInGroup(object):
         return self._has_one
 
     def copy(self):
-        M = MonoidInGroup(self.elements, self.ball, False, self.track)
+        M = MonoidInGroup(self.elements, self.ball, self.biorder, False, self.track)
         M._has_one = self._has_one
         if self.track:
             M._word_rep_one = self._word_rep_one
@@ -162,7 +192,7 @@ class ProofPrinter(Printer):
         self.edges_back_to_root = self.edges_back_to_root[:-1]
         Printer.contradiction(self, word, depth)
     
-def ball_has_order(B, P, printer, recur_depth):
+def ball_has_order(B, P, biorder, printer, recur_depth):
     printer.size_of_monoid(P, recur_depth)
     if P.has_one():
         if P.track:
@@ -178,24 +208,40 @@ def ball_has_order(B, P, printer, recur_depth):
     # expensive.
     if len(P) > 0.9 * 0.5 * len(B.elements):
         return True, P
-
     for x, y in B.non_id_element_pairs:
         if (x not in P) and (y not in P):
             printer.add_monoid_gen(x, recur_depth)
             newP = P.copy()
-            newP.saturate([x])
-            ans = ball_has_order(B, newP, printer, recur_depth+1)
+            newP.saturate([x], biorder)
+            ans = ball_has_order(B, newP, biorder, printer, recur_depth+1)
             if ans[0]:
                 return ans
             else:
                 printer.add_monoid_gen(y, recur_depth)
                 newP = P.copy()
-                newP.saturate([y])
-                return ball_has_order(B, newP, printer, recur_depth+1)
-
+                newP.saturate([y], biorder)
+                return ball_has_order(B, newP, biorder, printer, recur_depth+1)
     return True, P
 
+def conj_inv_obstruction(P, B, full_check=False):
+    if full_check:
+        S=B
+    else:
+        S=P
+    for x in S.elements:
+        for y in S.elements:
+            ybar = y.inverse()
+            z = x * ybar
+            u = ybar * x
+            ubar = u.inverse()
+            if (z in P.elements) and (ubar in P.elements):
+                print(x.word + ' * ' + y.word + ' is in P, but ' + y.word + ' * ' + x.word + ' is in P^-1.')
+                return True
+    return False
+
+
 def has_non_orderable_group(manifold, ball_radius=3,
+                            biorder=False,
                             silent=False, track=False, return_proof=False,
                             min_bits_accuracy=15,
                             fundamental_group_args = [True, True, False]):
@@ -259,12 +305,12 @@ def has_non_orderable_group(manifold, ball_radius=3,
     B = G.ball(ball_radius)
     printer.size_of_ball(B, 0)
     printer.add_monoid_gen(a, 0)
-    P = MonoidInGroup([a], B, track=track)
-    ans = not ball_has_order(B, P, printer, 1)[0]
+    P = MonoidInGroup([a], B, biorder=biorder, track=track)
+    ans = not ball_has_order(B, P, biorder, printer, 1)[0]
+
     if return_proof:
         if ans:
             return ans, printer.proof_string(manifold, fundamental_group_args)
         else:
             return ans, None
     return ans
-
