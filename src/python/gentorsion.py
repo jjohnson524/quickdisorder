@@ -1,4 +1,5 @@
 import snappy, quickdisorder
+import json
 
 def inverse_word(word):
     return word.swapcase()[::-1]
@@ -76,11 +77,11 @@ class Double3ManifoldGroup(object):
     def ball(self, radius):
         return CayleyBall(self, radius)
 
-
 def product_identity(element, conjugates, factors):
     for g in conjugates:
         z = element * g
         if z.is_one():
+            print('Found generalize torsion: '+z.word)
             return True
         elif factors > 2:
             ans = product_identity(z,conjugates,factors-1)
@@ -88,73 +89,13 @@ def product_identity(element, conjugates, factors):
                 return True
     return False
 
-def is_generalized_torsion(element, ball, factors):
-    if element.is_one() or factors == 1:
-        return False
-    conjugates = set()
-    for g in ball.elements:
-        z = g * element * g.inverse()
-        conjugates.add(z)
-    
-
-    for h in conjugates:
-        ans = product_identity(h, conjugates, factors)
-        if ans:
-            return True
-    return False
 
 def has_generalized_torsion(manifold, ball_radius=3, factors=2,
                             silent=False, track=False, return_proof=False,
                             min_bits_accuracy=15,
                             fundamental_group_args = [True, True, False]):
     """
-    >>> import snappy
-    >>> M = snappy.Manifold('m003(-3,1)')
-    >>> has_non_orderable_group(M, track=True)  # doctest: +SKIP
-    0: Ball has 151 elements
-    0: Adding a
-      1: Size of P is 3
-      1: Adding b
-        2: Size of P is 104
-        2: Contradiction: b*a*b*a*b*b*a*a*a*b = 1 in P
-      1: Adding B
-        2: Size of P is 14
-        2: Adding c
-          3: Size of P is 97
-          3: Contradiction: a*B*c*a*a*c*c = 1 in P
-        2: Adding C
-          3: Size of P is 54
-          3: Contradiction: C*a*C*a*a*B = 1 in P
-    True
-    >>> ans, proof = has_non_orderable_group(M, silent=True, return_proof=True)
-    >>> ans
-    True
-    >>> json.loads(proof)['proof']   # doctest: +SKIP
-    [[u'a.b', u'b.a.b.a.b.b.a.a.a.b'], [u'a.B.c', u'a.B.c.a.a.c.c'], [u'a.B.C', u'C.a.C.a.a.B']]
-    >>> N = snappy.Manifold('m004(1, 2)')
-    >>> has_non_orderable_group(N)
-    0: Ball has 159 elements
-    0: Adding a
-      1: Size of P is 3
-      1: Adding b
-        2: Size of P is 14
-        2: Adding c
-          3: Size of P is 36
-          3: Adding aB
-            4: Size of P is 49
-            4: Adding aC
-              5: Size of P is 67
-              5: Adding bC
-                6: Size of P is 70
-                6: Adding aBB
-                  7: Size of P is 72
-    False
 
-
-    >>> names = ['m003(-1, 3)', 'm003(-1, 5)', 'm003(-3, 1)', 'm003(-4, 3)', 'm003(-5, 2)', 'm003(-5, 4)', 'm004(-3, 2)', 'm004(-6, 1)']
-    >>> manifolds = [snappy.Manifold(name) for name in names]
-    >>> [has_non_orderable_group(M, silent=True) for M in manifolds]
-    [False, False, True, True, True, True, False, False]
     """
     #if return_proof:
     #    track = True
@@ -164,13 +105,39 @@ def has_generalized_torsion(manifold, ball_radius=3, factors=2,
     G = Double3ManifoldGroup(
               manifold, min_bits_accuracy, fundamental_group_args)
     #a = G('a')
+    hmap = homology_map(G.rho)
     B = G.ball(ball_radius)
     print("Ball has " + str(len(B.elements)))
-    for g in B.elements:
-        #print(g.word)
-        ans = is_generalized_torsion(g,B,factors)
-        if ans:
-            return ans
+    
+    elements_checked = set()
+    for pairs in B.non_id_element_pairs:
+        x = pairs[0]
+        if hmap.homology_image(x.word)==0:
+            print('Found null-homogolous word: ' + x.word)
+            if x.is_one():
+                print('    Word is trivial')
+            else:
+                if x in elements_checked:
+                    print('    Already checked')
+                else:
+                    print('    Checking')
+                    elements_checked.add(x)
+                    y = x.inverse()
+                    elements_checked.add(y)
+                    conjugates = set()
+                    for g in B.elements:
+                        z = g * x * g.inverse()
+                        conjugates.add(z)
+                        elements_checked.add(z)
+                        w = g * y * g.inverse()
+                        elements_checked.add(w)
+    
+
+                    for h in conjugates:
+                        ans = product_identity(h, conjugates, factors)
+                        if ans:
+                            return True
+                    print('    No generalized torsion produced.')
     return False
     #printer.size_of_ball(B, 0)
     #printer.add_monoid_gen(a, 0)
