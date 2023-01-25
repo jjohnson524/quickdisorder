@@ -110,7 +110,8 @@ def has_generalized_torsion(manifold, ball_radius=3, factors=2,
     print("Ball has " + str(len(B.elements)))
     
     elements_checked = set()
-    for x in B.elements:
+    for pairs in B.non_id_element_pairs:
+        x = pairs[0]
         if hmap.homology_image(x.word)==0:
             print('Found null-homogolous word: ' + x.word)
             if x.is_one():
